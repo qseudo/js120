@@ -166,3 +166,5 @@ const RPSGame = {
 };
 
 RPSGame.play();
+
+console.log('testing');
