@@ -73,6 +73,23 @@ function createScoreboard() {
   return {
     human: 0,
     computer: 0,
+
+    addPointToPlayer(winnerOfRound) {
+      this[winnerOfRound] += 1;
+    },
+
+    displayScoreboard() {
+      console.log(`Human: ${this.human} Computer: ${this.computer}`);
+    },
+
+    resetScoreboard() {
+      this.human = 0;
+      this.computer = 0;
+    },
+
+    playerReachesPointsToWin() {
+      return this.human === POINTS_TO_WIN || this.computer === POINTS_TO_WIN;
+    },
   };
 }
 
@@ -91,39 +108,34 @@ const RPSGame = {
     console.log('Thanks for playing Rock, Paper Scissors. Goodbye!');
   },
 
-  displayWinnerOfRound() {
+  determineWinnerOfRound() {
     let humanMove = this.human.move;
     let computerMove = this.computer.move;
-
-    console.log(`You chose ${this.human.move}.`);
-    console.log(`Computer chose ${this.computer.move}.`);
 
     if ((humanMove === 'rock' && computerMove === 'scissors') ||
       (humanMove === 'paper' && computerMove === 'rock') ||
       (humanMove === 'scissors' && computerMove === 'paper')) {
-      console.log('You win!');
       this.winnerOfRound = 'human';
     } else if ((computerMove === 'rock' && humanMove === 'scissors') ||
         (computerMove === 'paper' && humanMove === 'rock') ||
         (computerMove === 'scissors' && humanMove === 'paper')) {
-      console.log('You lose!');
       this.winnerOfRound = 'computer';
     } else {
-      console.log(`It's a tie.`);
       this.winnerOfRound = 'null';
     }
   },
 
-  updateScoreboard() {
-    if (this.winnerOfRound === 'human') {
-      this.scoreboard['human'] += 1;
-    } else if (this.winnerOfRound === 'computer') {
-      this.scoreboard['computer'] += 1;
-    }
-  },
+  displayWinnerOfRound() {
+    console.log(`You chose ${this.human.move}.`);
+    console.log(`Computer chose ${this.computer.move}.`);
 
-  displayScoreboard() {
-    console.log(`Player: ${this.scoreboard['human']} Computer: ${this.scoreboard['computer']}`);
+    if (this.winnerOfRound === 'human') {
+      console.log('You win!');
+    } else if (this.winnerOfRound === 'computer') {
+      console.log('You lose.');
+    } else {
+      console.log(`It's a tie.`);
+    }
   },
 
   nextRound() {
@@ -139,11 +151,6 @@ const RPSGame = {
     }
   },
 
-  resetScoreboard() {
-    this.scoreboard['human'] = 0;
-    this.scoreboard['computer'] = 0;
-  },
-
   play() {
     this.displayWelcomeMessage();
     while (true) {
@@ -151,16 +158,17 @@ const RPSGame = {
       while (true) {
         this.human.choose();
         this.computer.choose();
+        this.determineWinnerOfRound();
         this.displayWinnerOfRound();
-        this.updateScoreboard();
-        this.displayScoreboard();
-        if (Object.values(this.scoreboard).includes(POINTS_TO_WIN)) break;
+        this.scoreboard.addPointToPlayer(this.winnerOfRound);
+        this.scoreboard.displayScoreboard();
+        if (this.scoreboard.playerReachesPointsToWin()) break;
         this.nextRound();
       }
 
       this.displayWinnerOfGame();
       if (!this.playAgain()) break;
-      this.resetScoreboard();
+      this.scoreboard.resetScoreboard();
     }
 
     this.displayGoodbyeMessage();
