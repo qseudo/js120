@@ -132,16 +132,22 @@ const RPSGame = {
   },
 
   displayWinnerOfGame() {
-    if (this.scoreboard['human'] === 5) {
+    if (this.scoreboard['human'] === POINTS_TO_WIN) {
       console.log('You win the game!');
-    } else if (this.scoreboard['computer'] === 5) {
+    } else if (this.scoreboard['computer'] === POINTS_TO_WIN) {
       console.log('Computer wins the game!');
     }
+  },
+
+  resetScoreboard() {
+    this.scoreboard['human'] = 0;
+    this.scoreboard['computer'] = 0;
   },
 
   play() {
     this.displayWelcomeMessage();
     while (true) {
+
       while (true) {
         this.human.choose();
         this.computer.choose();
@@ -151,8 +157,10 @@ const RPSGame = {
         if (Object.values(this.scoreboard).includes(POINTS_TO_WIN)) break;
         this.nextRound();
       }
+
       this.displayWinnerOfGame();
       if (!this.playAgain()) break;
+      this.resetScoreboard();
     }
 
     this.displayGoodbyeMessage();
