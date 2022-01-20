@@ -69,19 +69,13 @@ function createHuman() {
   return Object.assign(playerObject, humanObject);
 }
 
-function createScoreboard() {
-  return {
-    human: 0,
-    computer: 0,
-  };
-}
-
 // Orchestration engine => engine is where the procedural program flow should be
 const RPSGame = {
   human: createHuman(),
   computer: createComputer(),
-  scoreboard: createScoreboard(),
   winnerOfRound: null,
+  humanScore: 0,
+  computerScore: 0,
 
   displayWelcomeMessage() {
     console.log('Welcome to Rock, Paper, Scissors!');
@@ -114,16 +108,16 @@ const RPSGame = {
     }
   },
 
-  updateScoreboard() {
+  updateScores() {
     if (this.winnerOfRound === 'human') {
-      this.scoreboard['human'] += 1;
+      this.humanScore += 1;
     } else if (this.winnerOfRound === 'computer') {
-      this.scoreboard['computer'] += 1;
+      this.computerScore += 1;
     }
   },
 
-  displayScoreboard() {
-    console.log(`Player: ${this.scoreboard['human']} Computer: ${this.scoreboard['computer']}`);
+  displayScores() {
+    console.log(`Player: ${this.humanScore} Computer: ${this.computerScore}`);
   },
 
   nextRound() {
@@ -132,11 +126,16 @@ const RPSGame = {
   },
 
   displayWinnerOfGame() {
-    if (this.scoreboard['human'] === 5) {
+    if (this.humanScore === POINTS_TO_WIN) {
       console.log('You win the game!');
-    } else if (this.scoreboard['computer'] === 5) {
+    } else if (this.computerScore === POINTS_TO_WIN) {
       console.log('Computer wins the game!');
     }
+  },
+
+  resetScores() {
+    this.humanScore = 0;
+    this.computerScore = 0;
   },
 
   play() {
@@ -146,13 +145,15 @@ const RPSGame = {
         this.human.choose();
         this.computer.choose();
         this.displayWinnerOfRound();
-        this.updateScoreboard();
-        this.displayScoreboard();
-        if (Object.values(this.scoreboard).includes(POINTS_TO_WIN)) break;
+        this.updateScores();
+        this.displayScores();
+        if (this.humanScore === POINTS_TO_WIN ||
+            this.computerScore === POINTS_TO_WIN) break;
         this.nextRound();
       }
       this.displayWinnerOfGame();
       if (!this.playAgain()) break;
+      this.resetScores();
     }
 
     this.displayGoodbyeMessage();
