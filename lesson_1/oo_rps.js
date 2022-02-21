@@ -173,7 +173,7 @@ const RPSGame = {
   },
 
   displayInstructions() {
-    console.log('');
+    console.log('\n');
     Object.keys(CHOICES_TABLE).forEach(key => {
       const winningCombos = CHOICES_TABLE[key].winningCombos
         .map(move => move.toUpperCase());
