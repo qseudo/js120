@@ -170,8 +170,27 @@ let TTTGame = {
     this.board.markSquareAt(choice, this.human.getMarker());
   },
 
+  findAtRiskSquare(player) {
+    return TTTGame.POSSIBLE_WINNING_ROWS.find(row => {
+      return this.board.countMarkersFor(player, row) === 2;
+    });
+  },
+
   computerMoves() {
+    // if atrisksquare, move @ risked square,
+    // else select random square
     let validChoices = this.board.unusedSquares();
+    const atRiskSquare = this.findAtRiskSquare(this.human.getMarker());
+
+    if (atRiskSquare) {
+      let choice = atRiskSquare.filter(square => validChoices.includes(square));
+      this.board.markSquareAt(choice, this.computer.getMarker());
+    } else {
+      this.selectRandomSquare(validChoices);
+    }
+  },
+
+  selectRandomSquare(validChoices) {
     let choice;
 
     do {

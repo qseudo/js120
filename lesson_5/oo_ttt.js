@@ -28,6 +28,10 @@ class Square {
 
 class Board {
   constructor() {
+    this.reset();
+  }
+
+  reset() {
     this.squares = {};
     for (let counter = 1; counter <= 9; counter += 1) {
       this.squares[`${counter}`] = new Square();
@@ -118,10 +122,47 @@ class TTTGame {
     ["3", "5", "7"],
   ]
 
+  static joinOr (choices, delimiter = ', ', word = 'or') {
+    if (choices.length === 1) return `${choices[0]}`;
+    if (choices.length === 2) return `${choices[0]} ${word} ${choices[1]}`;
+
+    let result = '';
+    const lastElementIndex = choices.length - 1;
+
+    result += choices.slice(0, lastElementIndex).join(delimiter);
+    result += `${delimiter}${word} ${choices[lastElementIndex]}`;
+    return result;
+  }
+
   play() {
     this.displayWelcomeMessage();
 
+    while (true) {
+      this.playRound();
+
+      if (!this.playAgain()) break;
+    }
+
+    this.displayGoodbyeMessage();
+  }
+
+  playAgain() {
+    let answer;
+
+    while (true) {
+      answer = readline.question('Play again? (Y or N):').toLowerCase();
+      if (['y', 'n'].includes(answer)) break;
+
+      console.log('Invalid input!');
+    }
+
+    return answer === "y";
+  }
+
+  playRound() {
+    this.board.reset();
     this.board.display();
+
     while (true) {
       this.humanMoves();
       if (this.gameOver()) break;
@@ -134,7 +175,6 @@ class TTTGame {
 
     this.board.displayWithClear();
     this.displayResults();
-    this.displayGoodbyeMessage();
   }
 
   displayWelcomeMessage() {
@@ -151,7 +191,7 @@ class TTTGame {
 
     while (true) {
       let validChoices = this.board.unusedSquares();
-      const prompt = `Choose a square (${validChoices.join(', ')}):`;
+      const prompt = `Choose a square (${TTTGame.joinOr(validChoices)}):`;
       choice = readline.question(prompt);
 
       if (validChoices.includes(choice)) break;
