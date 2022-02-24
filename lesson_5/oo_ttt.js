@@ -27,6 +27,9 @@ class Square {
 }
 
 class Board {
+  static MIDDLE_SQUARE = '5';
+  static NUMBER_OF_SPACES_IN_ROW = 3;
+
   constructor() {
     this.reset();
   }
@@ -67,6 +70,10 @@ class Board {
   unusedSquares() {
     let keys = Object.keys(this.squares);
     return keys.filter(key => this.squares[key].isUnused());
+  }
+
+  isUnusedSquare(square) {
+    return this.unusedSquares().includes(square);
   }
 
   isFull() {
@@ -207,7 +214,7 @@ class TTTGame {
     const atRiskRows = this.findAtRiskRows(player);
 
     const atRiskSquare = atRiskRows.flat().find(square => {
-      return this.board.unusedSquares().includes(square);
+      return this.board.isUnusedSquare(square);
     });
 
     return atRiskSquare;
@@ -215,7 +222,8 @@ class TTTGame {
 
   findAtRiskRows(player) {
     return TTTGame.POSSIBLE_WINNING_ROWS.filter(rows => {
-      return this.board.countMarkersFor(player, rows) === 2;
+      return this.board.countMarkersFor(player, rows) ===
+        (Board.NUMBER_OF_SPACES_IN_ROW - 1);
     });
   }
 
@@ -229,7 +237,7 @@ class TTTGame {
 
   computerMoves() {
     let choice = this.computerOffensiveMove() || this.computerDefensiveMove() ||
-      this.chooseRandomSquare();
+      this.chooseMiddleSquare() || this.chooseRandomSquare();
     this.board.markSquareAt(choice, this.computer.getMarker());
   }
 
@@ -238,10 +246,16 @@ class TTTGame {
     let choice;
 
     do {
-      choice = Math.floor((9 * Math.random()) + 1).toString();
+      choice = Math.floor((Object.keys(this.board.squares).length *
+        Math.random()) + 1).toString();
     } while (!validChoices.includes(choice));
 
     return choice;
+  }
+
+  chooseMiddleSquare() {
+    return this.board.squares[Board.MIDDLE_SQUARE].isUnused() ?
+      Board.MIDDLE_SQUARE : null;
   }
 
   gameOver() {
@@ -264,7 +278,8 @@ class TTTGame {
 
   isWinner(player) {
     return TTTGame.POSSIBLE_WINNING_ROWS.some(row => {
-      return this.board.countMarkersFor(player, row) === 3;
+      return this.board.countMarkersFor(player, row) ===
+        Board.NUMBER_OF_SPACES_IN_ROW;
     });
   }
 }
