@@ -26,9 +26,78 @@ class Square {
   }
 }
 
+class Player {
+  constructor(marker) {
+    this.marker = marker;
+  }
+
+  getMarker() {
+    return this.marker;
+  }
+}
+
+class Human extends Player {
+  constructor() {
+    super(Square.HUMAN_MARKER);
+  }
+}
+
+class Computer extends Player {
+  constructor() {
+    super(Square.COMPUTER_MARKER);
+  }
+}
+
+class Scoreboard {
+  static POINTS_TO_WIN = 3;
+
+  constructor() {
+    this.human = 0;
+    this.computer = 0;
+    this.winner = null;
+  }
+
+  display() {
+    console.log('');
+    console.log(`Human: ${this.human} Computer: ${this.computer}`);
+    console.log('');
+  }
+
+  addPoint(player) {
+    if (player) {
+      if (player.constructor === Human) {
+        this.human += 1;
+      } else if (player.constructor === Computer) {
+        this.computer += 1;
+      }
+    }
+  }
+
+  determineWinnerOfMatch() {
+    if (this.human === Scoreboard.POINTS_TO_WIN) {
+      this.winner = Human;
+    } else if (this.computer === Scoreboard.POINTS_TO_WIN) {
+      this.winner = Computer;
+    }
+  }
+
+  someoneWonTheMatch() {
+    return this.winner;
+  }
+
+  displayResultsOfMatch() {
+    if (this.winner === Human) {
+      console.log('You won the game!');
+    } else {
+      console.log('Computer has won the game!');
+    }
+  }
+}
+
 class Board {
   static MIDDLE_SQUARE = '5';
-  static NUMBER_OF_SPACES_IN_ROW = 3;
+  static NUMBER_OF_SQUARES_IN_ROW = 3;
+  static NUMBER_OF_SQUARES_IN_BOARD = 9;
 
   constructor() {
     this.reset();
@@ -36,7 +105,8 @@ class Board {
 
   reset() {
     this.squares = {};
-    for (let counter = 1; counter <= 9; counter += 1) {
+    for (let counter = 1; counter <= Board.NUMBER_OF_SQUARES_IN_BOARD;
+      counter += 1) {
       this.squares[`${counter}`] = new Square();
     }
   }
@@ -89,33 +159,13 @@ class Board {
   }
 }
 
-class Player {
-  constructor(marker) {
-    this.marker = marker;
-  }
-
-  getMarker() {
-    return this.marker;
-  }
-}
-
-class Human extends Player {
-  constructor() {
-    super(Square.HUMAN_MARKER);
-  }
-}
-
-class Computer extends Player {
-  constructor() {
-    super(Square.COMPUTER_MARKER);
-  }
-}
-
 class TTTGame {
   constructor() {
     this.board = new Board();
     this.human = new Human();
     this.computer = new Computer();
+    this.scoreboard = new Scoreboard();
+    this.winnerOfRound = null;
   }
 
   static POSSIBLE_WINNING_ROWS = [
@@ -143,32 +193,31 @@ class TTTGame {
 
   play() {
     this.displayWelcomeMessage();
-
-    while (true) {
-      this.playRound();
-
-      if (!this.playAgain()) break;
-    }
-
+    this.playMatch();
     this.displayGoodbyeMessage();
   }
 
-  playAgain() {
-    let answer;
-
+  playMatch() {
     while (true) {
-      answer = readline.question('Play again? (Y or N):').toLowerCase();
-      if (['y', 'n'].includes(answer)) break;
+      this.playRound();
 
-      console.log('Invalid input!');
+      this.scoreboard.determineWinnerOfMatch();
+      if (this.scoreboard.someoneWonTheMatch()) break;
+      this.nextRound();
     }
 
-    return answer === "y";
+    this.board.displayWithClear();
+    this.scoreboard.display();
+    this.scoreboard.displayResultsOfMatch();
+  }
+
+  nextRound() {
+    readline.question(`Ready for the next round? Enter any key to continue.`);
   }
 
   playRound() {
     this.board.reset();
-    this.board.display();
+    this.displayBoards();
 
     while (true) {
       this.humanMoves();
@@ -177,11 +226,23 @@ class TTTGame {
       this.computerMoves();
       if (this.gameOver()) break;
 
-      this.board.displayWithClear();
+      this.displayBoardsWithClear();
     }
 
+    this.determineWinnerOfRound();
+    this.scoreboard.addPoint(this.winnerOfRound);
+    this.displayBoardsWithClear();
+    this.displayResultsOfRound();
+  }
+
+  displayBoards() {
+    this.board.display();
+    this.scoreboard.display();
+  }
+
+  displayBoardsWithClear() {
     this.board.displayWithClear();
-    this.displayResults();
+    this.scoreboard.display();
   }
 
   displayWelcomeMessage() {
@@ -223,7 +284,7 @@ class TTTGame {
   findAtRiskRows(player) {
     return TTTGame.POSSIBLE_WINNING_ROWS.filter(rows => {
       return this.board.countMarkersFor(player, rows) ===
-        (Board.NUMBER_OF_SPACES_IN_ROW - 1);
+        (Board.NUMBER_OF_SQUARES_IN_ROW - 1);
     });
   }
 
@@ -246,7 +307,7 @@ class TTTGame {
     let choice;
 
     do {
-      choice = Math.floor((Object.keys(this.board.squares).length *
+      choice = Math.floor((Board.NUMBER_OF_SQUARES_IN_BOARD *
         Math.random()) + 1).toString();
     } while (!validChoices.includes(choice));
 
@@ -266,20 +327,30 @@ class TTTGame {
     return this.isWinner(this.human) || this.isWinner(this.computer);
   }
 
-  displayResults() {
+  determineWinnerOfRound() {
     if (this.isWinner(this.human)) {
-      console.log('You won! Congratulations!');
+      this.winnerOfRound = this.human;
     } else if (this.isWinner(this.computer)) {
-      console.log('I won! I won! Take that, human!');
+      this.winnerOfRound = this.computer;
     } else {
-      console.log('A tie game. How boring.');
+      this.winnerOfRound = null;
+    }
+  }
+
+  displayResultsOfRound() {
+    if (this.winnerOfRound === this.human) {
+      console.log('You win this round!');
+    } else if (this.winnerOfRound === this.computer) {
+      console.log('Computer wins this round!');
+    } else {
+      console.log(`It's a tie.`);
     }
   }
 
   isWinner(player) {
     return TTTGame.POSSIBLE_WINNING_ROWS.some(row => {
       return this.board.countMarkersFor(player, row) ===
-        Board.NUMBER_OF_SPACES_IN_ROW;
+        Board.NUMBER_OF_SQUARES_IN_ROW;
     });
   }
 }
