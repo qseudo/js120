@@ -203,7 +203,37 @@ class TTTGame {
     this.board.markSquareAt(choice, this.human.getMarker());
   }
 
+  findAtRiskSquare(player) {
+    const atRiskRows = this.findAtRiskRows(player);
+
+    const atRiskSquare = atRiskRows.flat().find(square => {
+      return this.board.unusedSquares().includes(square);
+    });
+
+    return atRiskSquare;
+  }
+
+  findAtRiskRows(player) {
+    return TTTGame.POSSIBLE_WINNING_ROWS.filter(rows => {
+      return this.board.countMarkersFor(player, rows) === 2;
+    });
+  }
+
+  computerDefensiveMove() {
+    return this.findAtRiskSquare(this.human);
+  }
+
+  computerOffensiveMove() {
+    return this.findAtRiskSquare(this.computer);
+  }
+
   computerMoves() {
+    let choice = this.computerOffensiveMove() || this.computerDefensiveMove() ||
+      this.chooseRandomSquare();
+    this.board.markSquareAt(choice, this.computer.getMarker());
+  }
+
+  chooseRandomSquare() {
     let validChoices = this.board.unusedSquares();
     let choice;
 
@@ -211,7 +241,7 @@ class TTTGame {
       choice = Math.floor((9 * Math.random()) + 1).toString();
     } while (!validChoices.includes(choice));
 
-    this.board.markSquareAt(choice, this.computer.getMarker());
+    return choice;
   }
 
   gameOver() {
