@@ -166,6 +166,7 @@ class TTTGame {
     this.computer = new Computer();
     this.scoreboard = new Scoreboard();
     this.winnerOfRound = null;
+    this.firstPlayer = this.human;
   }
 
   static POSSIBLE_WINNING_ROWS = [
@@ -219,14 +220,13 @@ class TTTGame {
     this.board.reset();
     this.displayBoards();
 
+    let currentPlayer = this.firstPlayer;
     while (true) {
-      this.humanMoves();
+      this.playerMoves(currentPlayer);
       if (this.gameOver()) break;
 
-      this.computerMoves();
-      if (this.gameOver()) break;
-
-      this.displayBoardsWithClear();
+      this.board.displayWithClear();
+      currentPlayer = this.togglePlayer(currentPlayer);
     }
 
     this.determineWinnerOfRound();
@@ -243,6 +243,7 @@ class TTTGame {
   displayBoardsWithClear() {
     this.board.displayWithClear();
     this.scoreboard.display();
+    this.firstPlayer = this.togglePlayer(this.firstPlayer);
   }
 
   displayWelcomeMessage() {
@@ -352,6 +353,22 @@ class TTTGame {
       return this.board.countMarkersFor(player, row) ===
         Board.NUMBER_OF_SQUARES_IN_ROW;
     });
+  }
+
+  playerMoves(currentPlayer) {
+    if (currentPlayer === this.human) {
+      this.humanMoves();
+    } else if (currentPlayer === this.computer) {
+      this.computerMoves();
+    }
+  }
+
+  togglePlayer(currentPlayer) {
+    if (currentPlayer === this.human) {
+      return this.computer;
+    } else {
+      return this.human;
+    }
   }
 }
 
