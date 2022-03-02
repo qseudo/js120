@@ -1,5 +1,4 @@
 const readline = require('readline-sync');
-const MAX_BEFORE_BUST = 21;
 
 class Card {
   constructor(suit, rank) {
@@ -76,6 +75,8 @@ class Participant {
     this.reset();
   }
 
+  static MAX_BEFORE_BUST = 21;
+
   reset() {
     this.hand = [];
     this.bust = false;
@@ -83,7 +84,7 @@ class Participant {
 
   calculateTotal() {
     let sum = this.hand.reduce((acc, val) => acc + val.value, 0);
-    if (this.hand.find(card => card.rank === 'ACE') && (sum + Card.ACE_EXTRA_VALUE <= MAX_BEFORE_BUST)) {
+    if (this.hand.find(card => card.rank === 'ACE') && (sum + Card.ACE_EXTRA_VALUE <= Participant.MAX_BEFORE_BUST)) {
       sum += Card.ACE_EXTRA_VALUE;
     }
     return sum;
@@ -109,6 +110,8 @@ class Participant {
     let ranks = this.hand.map(card => card.toString());
     resultString += this.joinAnd(ranks);
 
+    let total = ` | TOTAL: ${this.calculateTotal()}`;
+    resultString += total;
     console.log(resultString);
   }
 
@@ -117,13 +120,34 @@ class Participant {
   }
 
   checkForBust() {
-    if (this.calculateTotal() > MAX_BEFORE_BUST) this.bust = true;
+    if (this.calculateTotal() > Participant.MAX_BEFORE_BUST) this.bust = true;
   }
 }
 
 class Player extends Participant {
   constructor() {
     super();
+    this.wallet = Player.STARTING_CASH;
+  }
+
+  static STARTING_CASH = 5;
+
+  isRich() {
+    return this.wallet === 10;
+  }
+
+  isBroke() {
+    return this.wallet === 0;
+  }
+
+  displayWallet() {
+    let chars = `|  $${this.wallet}   |`;
+    let border = '-'.repeat(chars.length);
+
+    console.log(`[ Player's Wallet ]`);
+    console.log(border);
+    console.log(chars);
+    console.log(border);
   }
 }
 
@@ -156,24 +180,54 @@ class TwentyOneGame {
     this.deck = new Deck();
     this.player = new Player();
     this.dealer = new Dealer();
+    this.winner = null;
   }
 
   play() {
     console.clear();
     this.displayWelcomeMessage();
-    this.dealCards();
-    this.playersTurn();
-    if (!this.player.hasBusted()) this.dealersTurn();
-    this.displayResults();
+    while (true) {
+      this.dealCards();
+      this.playersTurn();
+      if (!this.player.hasBusted()) this.dealersTurn();
+      this.displayResults();
+      if (this.gameOver()) break;
+      this.nextRound();
+      this.resetGame();
+      console.clear();
+    }
+    this.displayWinnerOfMatch();
     this.displayGoodbyeMessage();
   }
 
   displayWelcomeMessage() {
-    console.log('Welcome to Twenty One!');
+    console.log('! Welcome to TWENTY ONE !');
+    console.log('Closest to 21 without going over wins the round.');
+    console.log('It takes $1 to play a round.');
+    console.log('If you hit $0, you lose.');
+    console.log('If you reach $10, you win!');
+    console.log('');
   }
 
   displayGoodbyeMessage() {
     console.log('Thanks for playing Twenty One! Goodbye.');
+  }
+
+  gameOver() {
+    return this.player.isBroke() || this.player.isRich();
+  }
+
+  displayWinnerOfMatch() {
+    if (this.player.isBroke()) {
+      console.log('You have no more money! You lose the game.');
+    } else if (this.player.isRich()) {
+      console.log(`You're rich! You win the game!`);
+    }
+  }
+
+  nextRound() {
+    console.log('Ready for the next round? Enter any key to continue.');
+    readline.prompt();
   }
 
   dealCards() {
@@ -183,7 +237,9 @@ class TwentyOneGame {
     this.deck.dealACard(this.dealer);
   }
 
-  showParticipantsCards() {
+  showCardsAndWallet() {
+    this.player.displayWallet();
+    console.log('');
     console.log(`Player's cards:`);
     this.player.showCardsInHand();
     console.log('');
@@ -192,71 +248,110 @@ class TwentyOneGame {
     console.log('');
   }
 
-  showCardsWithClear() {
+  showCardsAndWalletWithClear() {
     console.clear();
-    this.showParticipantsCards();
+    this.showCardsAndWallet();
   }
 
   revealParticipantsCards() {
+    console.log(`Player's cards:`);
     this.player.showCardsInHand();
-    console.log(this.player.calculateTotal());
+    console.log(`Dealer's cards:`);
     this.dealer.showCardsInHand();
-    console.log(this.dealer.calculateTotal());
   }
 
   playersTurn() {
-    this.showParticipantsCards();
+    this.showCardsAndWallet();
 
     while (true) {
-      let answer;
-      while (true) {
-        answer = readline.question(`Hit or stay?`).toLowerCase();
-        if (answer === 'h' || answer === 's' || answer === 'hit' || answer === 'stay') break;
-        console.log(`Invalid answer!`);
-      }
+      let answer = this.promptPlayerForHitOrStay();
       if (answer === 's' || answer === 'stay') {
         console.log('Player chooses [STAY].');
         break;
       }
-      console.log('Player chooses [HIT].');
       this.deck.dealACard(this.player);
       this.player.checkForBust();
       if (this.player.hasBusted()) break;
-      this.showCardsWithClear();
+      this.showCardsAndWalletWithClear();
+      console.log('Player chooses [HIT].');
     }
   }
 
+  promptPlayerForHitOrStay() {
+    let answer;
+    while (true) {
+      console.log(`Hit or stay?`);
+      answer = readline.prompt().toLowerCase();
+      if (answer === 'h' || answer === 's' || answer === 'hit' || answer === 'stay') break;
+      console.log(`Invalid answer!`);
+    }
+    return answer;
+  }
+
   dealersTurn() {
-    this.showCardsWithClear();
+    this.showCardsAndWalletWithClear();
 
     while (this.dealer.calculateTotal() < Dealer.MIN_TO_STAY) {
-      console.log('Dealer chooses [HIT].');
       this.deck.dealACard(this.dealer);
       this.dealer.checkForBust();
       if (this.dealer.hasBusted()) break;
-      this.showCardsWithClear();
+      this.showCardsAndWalletWithClear();
     }
+    let numOfCards = this.dealer.hand.length;
+    if (numOfCards === 3) console.log(`Dealer chose [HIT] ${numOfCards - 2} time.`);
+    if (numOfCards > 3) console.log(`Dealer chose [HIT] ${numOfCards - 2} times.`);
     if (!this.dealer.hasBusted()) console.log('Dealer chooses [STAY].');
   }
 
   displayResults() {
+    console.log('');
+    console.log('~~~ RESULTS ~~~');
     this.revealParticipantsCards();
-    if (this.player.hasBusted()) {
-      console.log('Player busted!');
-    } else if (this.dealer.hasBusted()) {
-      console.log('Dealer busted!');
-    } else if (this.player.calculateTotal() < this.dealer.calculateTotal()) {
-      console.log('Dealer wins!');
-    } else if (this.player.calculateTotal() > this.dealer.calculateTotal()) {
-      console.log('Player wins!');
+    console.log('');
+    this.determineWinner();
+    this.displayWinner();
+    this.player.displayWallet();
+  }
+
+  displayWinner() {
+    if (this.winner === this.player) {
+      console.log('Player wins! You get $1!');
+      this.player.wallet += 1;
+    } else if (this.winner === this.dealer) {
+      console.log('Dealer wins! You lose $1.');
+      this.player.wallet -= 1;
     } else {
       console.log(`It's a tie.`);
     }
-    // stub
-    // if human bust, dealer win
-    // if dealer bust, human win
-    // else if player hand > dealer hand, human win
-    // else if player hand < dealer hand, dealer wins
+  }
+
+  determineWinner() {
+    if (this.player.hasBusted()) {
+      console.log('Player busted!');
+      this.winner = this.dealer;
+    } else if (this.dealer.hasBusted()) {
+      console.log('Dealer busted!');
+      this.winner = this.player;
+    } else if (this.dealer.calculateTotal() > this.player.calculateTotal()) {
+      console.log(`Dealer's hand beats Player's hand.`);
+      this.winner = this.dealer;
+    } else if (this.player.calculateTotal() > this.dealer.calculateTotal()) {
+      console.log(`Player's hand beats Dealer's hand.`);
+      this.winner = this.player;
+    } else {
+      console.log(`Both hands are equal in value.`);
+    }
+  }
+
+  resetWinner() {
+    this.winner = null;
+  }
+
+  resetGame() {
+    this.deck.reset();
+    this.player.reset();
+    this.dealer.reset();
+    this.resetWinner();
   }
 }
 
